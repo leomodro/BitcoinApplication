@@ -8,21 +8,26 @@
 
 import UIKit
 import SnapKit
+import ScrollableGraphView
 
 class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.black
+        view.backgroundColor = UIColor.hexToUIColor(hex: "2D3134")
         setupNavigationBar()
     }
     
     func setupNavigationBar() {
-        navigationController?.navigationBar.barTintColor = .black
+        navigationController?.navigationBar.barTintColor = UIColor.hexToUIColor(hex: "2D3134")
         navigationController?.navigationBar.isTranslucent = false
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationController?.navigationBar.topItem?.title = "Dashboard"
         navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor: UIColor.white]
+    }
+    
+    func setupInterfaceItems() {
+        
     }
 }
 
