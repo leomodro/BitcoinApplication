@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import AlamofireNetworkActivityIndicator
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,7 +16,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         window = UIWindow(frame: UIScreen.main.bounds)
-        let rootVC = ViewController()
+        
+        NetworkActivityIndicatorManager.shared.isEnabled  = true
+        NetworkActivityIndicatorManager.shared.completionDelay = 0.5
+        NetworkActivityIndicatorManager.shared.startDelay = 0.1
+        
+        let rootVC = UINavigationController(rootViewController: ViewController())
         window?.rootViewController = rootVC
         window?.makeKeyAndVisible()
         return true
