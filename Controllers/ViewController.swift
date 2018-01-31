@@ -19,7 +19,7 @@ class ViewController: UIViewController {
     var latestPrice: UILabel = {
         var lbl = UILabel()
         lbl.text = "ÚLTIMA COTAÇÃO"
-        lbl.textColor = UIColor.hexToUIColor(hex: "DCDDDD")
+        lbl.textColor = Color.title
         lbl.font = UIFont.systemFont(ofSize: 16)
         lbl.sizeToFit()
         return lbl
@@ -37,7 +37,7 @@ class ViewController: UIViewController {
     var history: UILabel = {
         var lbl = UILabel()
         lbl.text = "HISTÓRICO DA COTAÇÃO"
-        lbl.textColor = UIColor.hexToUIColor(hex: "DCDDDD")
+        lbl.textColor = Color.title
         lbl.font = UIFont.systemFont(ofSize: 16)
         lbl.sizeToFit()
         return lbl
@@ -46,7 +46,7 @@ class ViewController: UIViewController {
     //MARK: - Lifecycle methods
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.hexToUIColor(hex: "2D3134")
+        view.backgroundColor = Color.background
         setupNavigationBar()
         setupInterfaceItems()
         DispatchQueue.global().async {
@@ -57,7 +57,7 @@ class ViewController: UIViewController {
     
     //MARK: - Setting up UI
     func setupNavigationBar() {
-        navigationController?.navigationBar.barTintColor = UIColor.hexToUIColor(hex: "2D3134")
+        navigationController?.navigationBar.barTintColor = Color.background
         navigationController?.navigationBar.isTranslucent = false
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationController?.navigationBar.topItem?.title = "Dashboard"
@@ -89,14 +89,14 @@ class ViewController: UIViewController {
         let linePlot = LinePlot(identifier: "darkLine")
         
         linePlot.lineWidth = 1
-        linePlot.lineColor = UIColor.hexToUIColor(hex: "777777")
+        linePlot.lineColor = Color.lineChart
         linePlot.lineStyle = ScrollableGraphViewLineStyle.smooth
         
         linePlot.shouldFill = true
         linePlot.fillType = ScrollableGraphViewFillType.gradient
         linePlot.fillGradientType = ScrollableGraphViewGradientType.linear
-        linePlot.fillGradientStartColor = UIColor.hexToUIColor(hex: "555555")
-        linePlot.fillGradientEndColor = UIColor.hexToUIColor(hex: "444444")
+        linePlot.fillGradientStartColor = Color.gradientStart
+        linePlot.fillGradientEndColor = Color.gradientEnd
         linePlot.adaptAnimationType = ScrollableGraphViewAnimationType.elastic
         
         let dotPlot = DotPlot(identifier: "darkLineDot")
@@ -114,7 +114,7 @@ class ViewController: UIViewController {
         referenceLines.referenceLineNumberStyle = .currencyAccounting
         referenceLines.dataPointLabelColor = UIColor.white.withAlphaComponent(0.5)
         
-        graphView.backgroundFillColor = UIColor.hexToUIColor(hex: "2D3134")
+        graphView.backgroundFillColor = Color.background
         graphView.dataPointSpacing = 80
         graphView.shouldAnimateOnStartup = true
         // Disable Adapt Range to remove animations when scrolling
@@ -138,11 +138,10 @@ class ViewController: UIViewController {
     
     //MARK: - Request to API
     private func fetchMarketPrices() {
-        let url = "https://api.blockchain.info/charts/market-price?timespan=5weeks&format=json"
-        DataService.instance.request(url: url, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
+        DataService.instance.request(url: Request.historyPrice, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
             if error != nil {
                 let alert = UIAlertController()
-                alert.generate(parent: self, title: "Erro", message: "Não foi possível recuperar o histórico de cotações. Por favor, tente novamente mais tarde", buttonText: "OK")
+                alert.generate(parent: self, title: "Atenção", message: "Não foi possível recuperar o histórico de cotações. Por favor, tente novamente mais tarde", buttonText: "OK")
             } else {
                 do {
                     let json = try JSON(data: data! as Data)
@@ -165,11 +164,10 @@ class ViewController: UIViewController {
     }
     
     private func fetchLatestPrice() {
-        let url = "https://api.blockchain.info/stats"
-        DataService.instance.request(url: url, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
+        DataService.instance.request(url: Request.latestPrice, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
             if error != nil {
                 let alert = UIAlertController()
-                alert.generate(parent: self, title: "Erro", message: "Não foi possível recuperar a última cotação. Por favor, tente novamente mais tarde", buttonText: "OK")
+                alert.generate(parent: self, title: "Atenção", message: "Não foi possível recuperar a última cotação. Por favor, tente novamente mais tarde", buttonText: "OK")
             } else {
                 do {
                     let json = try JSON(data: data! as Data)
