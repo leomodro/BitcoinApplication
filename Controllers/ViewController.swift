@@ -27,7 +27,7 @@ class ViewController: UIViewController {
     
     var price: UILabel = {
         var lbl = UILabel()
-        lbl.text = "$ 10.000,00"
+        lbl.text = "$ 0"
         lbl.textColor = .white
         lbl.font = UIFont.systemFont(ofSize: 24)
         lbl.sizeToFit()
@@ -49,6 +49,9 @@ class ViewController: UIViewController {
         view.backgroundColor = UIColor.hexToUIColor(hex: "2D3134")
         setupNavigationBar()
         setupInterfaceItems()
+        DispatchQueue.global().async {
+            self.fetchLatestPrice()
+        }
         fetchMarketPrices()
     }
     
@@ -137,26 +140,55 @@ class ViewController: UIViewController {
     private func fetchMarketPrices() {
         let url = "https://api.blockchain.info/charts/market-price?timespan=5weeks&format=json"
         DataService.instance.request(url: url, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
-            do {
-                let json = try JSON(data: data! as Data)
-                for value in json["values"].arrayValue {
-                    let timestamp = value["x"].doubleValue
-                    let price = value["y"].doubleValue
-                    
-                    let date = Date(timeIntervalSince1970: timestamp)
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateFormat = "MMM d"
-                    let strDate = dateFormatter.string(from: date)
-                    self.marketPrices.append(MarketPrice(date: strDate, price: price.rounded()))
+            if error != nil {
+                let alert = UIAlertController()
+                alert.generate(parent: self, title: "Erro", message: "Não foi possível recuperar o histórico de cotações. Por favor, tente novamente mais tarde", buttonText: "OK")
+            } else {
+                do {
+                    let json = try JSON(data: data! as Data)
+                    for value in json["values"].arrayValue {
+                        let timestamp = value["x"].doubleValue
+                        let price = value["y"].doubleValue
+                        
+                        let date = Date(timeIntervalSince1970: timestamp)
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "MMM d"
+                        let strDate = dateFormatter.string(from: date)
+                        self.marketPrices.append(MarketPrice(date: strDate, price: price.rounded()))
+                    }
+                    self.setupGraph()
+                } catch {
+                    debugPrint("Error loading json")
                 }
-                self.setupGraph()
-            } catch {
-                debugPrint("Error loading json")
+            }
+        }
+    }
+    
+    private func fetchLatestPrice() {
+        let url = "https://api.blockchain.info/stats"
+        DataService.instance.request(url: url, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
+            if error != nil {
+                let alert = UIAlertController()
+                alert.generate(parent: self, title: "Erro", message: "Não foi possível recuperar a última cotação. Por favor, tente novamente mais tarde", buttonText: "OK")
+            } else {
+                do {
+                    let json = try JSON(data: data! as Data)
+                    let price = json["market_price_usd"].doubleValue
+                    let formatter = NumberFormatter()
+                    formatter.locale = Locale(identifier: "en_US")
+                    formatter.numberStyle = .currency
+                    if let formattedPrice = formatter.string(from: price.rounded() as NSNumber) {
+                        self.price.text = "\(formattedPrice)"
+                    }
+                } catch {
+                    debugPrint("Error loading json")
+                }
             }
         }
     }
 }
 
+//MARK: -
 extension ViewController: ScrollableGraphViewDataSource {
     func value(forPlot plot: Plot, atIndex pointIndex: Int) -> Double {
         return marketPrices[pointIndex].price
