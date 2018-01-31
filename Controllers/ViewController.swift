@@ -15,6 +15,7 @@ import Alamofire
 class ViewController: UIViewController {
     
     var graphView: ScrollableGraphView!
+    var marketPrices: [MarketPrice] = []
     var latestPrice: UILabel = {
         var lbl = UILabel()
         lbl.text = "ÚLTIMA COTAÇÃO"
@@ -46,9 +47,9 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.hexToUIColor(hex: "2D3134")
-        fetchMarketPrices()
         setupNavigationBar()
         setupInterfaceItems()
+        fetchMarketPrices()
     }
     
     //MARK: - Setting up UI
@@ -79,8 +80,8 @@ class ViewController: UIViewController {
         }
     }
     
-    private func setupGraph(_ frame: CGRect) {
-        graphView = ScrollableGraphView(frame: frame, dataSource: self)
+    private func setupGraph() {
+        graphView = ScrollableGraphView(frame: CGRect(x: 12, y: 300, width: 300, height: 300), dataSource: self)
         
         let linePlot = LinePlot(identifier: "darkLine")
         
@@ -93,7 +94,6 @@ class ViewController: UIViewController {
         linePlot.fillGradientType = ScrollableGraphViewGradientType.linear
         linePlot.fillGradientStartColor = UIColor.hexToUIColor(hex: "555555")
         linePlot.fillGradientEndColor = UIColor.hexToUIColor(hex: "444444")
-        
         linePlot.adaptAnimationType = ScrollableGraphViewAnimationType.elastic
         
         let dotPlot = DotPlot(identifier: "darkLineDot")
@@ -103,48 +103,53 @@ class ViewController: UIViewController {
         dotPlot.adaptAnimationType = ScrollableGraphViewAnimationType.elastic
         
         let referenceLines = ReferenceLines()
-        
-        referenceLines.referenceLineLabelFont = UIFont.boldSystemFont(ofSize: 8)
+        referenceLines.referenceLineLabelFont = UIFont.boldSystemFont(ofSize: 10)
         referenceLines.referenceLineColor = UIColor.white.withAlphaComponent(0.2)
         referenceLines.referenceLineLabelColor = UIColor.white
-        
         referenceLines.positionType = .absolute
-        referenceLines.absolutePositions = [10.000, 12.000, 14.000, 16.000, 18.000, 20.000]
-        referenceLines.includeMinMax = false
-        
+        referenceLines.absolutePositions = [10000, 12000, 14000, 16000, 18000]
+        referenceLines.referenceLineNumberStyle = .currencyAccounting
         referenceLines.dataPointLabelColor = UIColor.white.withAlphaComponent(0.5)
         
-        graphView.backgroundFillColor = UIColor.hexToUIColor(hex: "333333")
+        graphView.backgroundFillColor = UIColor.hexToUIColor(hex: "2D3134")
         graphView.dataPointSpacing = 80
-        
         graphView.shouldAnimateOnStartup = true
+        // Disable Adapt Range to remove animations when scrolling
+        graphView.shouldAdaptRange = false
         graphView.shouldAdaptRange = true
-        graphView.shouldRangeAlwaysStartAtZero = true
-        
-        graphView.rangeMax = 50
+        graphView.rangeMin = 10000
+        graphView.rangeMax = 18000
         
         graphView.addReferenceLines(referenceLines: referenceLines)
         graphView.addPlot(plot: linePlot)
         graphView.addPlot(plot: dotPlot)
+        
+        self.view.addSubview(graphView)
+        graphView.snp.makeConstraints { (make) in
+            make.top.equalTo(history.snp.bottom).offset(10)
+            make.bottom.equalTo(self.view.safeAreaLayoutGuide.snp.bottom)
+            make.trailing.equalTo(self.view.safeAreaLayoutGuide.snp.trailing)
+            make.leading.equalTo(self.view.safeAreaLayoutGuide.snp.leading)
+        }
     }
     
     //MARK: - Request to API
     private func fetchMarketPrices() {
-        let url = "https://api.blockchain.info/charts/market-price?timespan=1week&format=json"
+        let url = "https://api.blockchain.info/charts/market-price?timespan=5weeks&format=json"
         DataService.instance.request(url: url, params: nil, method: HTTPMethod.get, encoding: URLEncoding.httpBody) { (success, data, error) in
             do {
                 let json = try JSON(data: data! as Data)
                 for value in json["values"].arrayValue {
                     let timestamp = value["x"].doubleValue
                     let price = value["y"].doubleValue
-                    print(price)
                     
                     let date = Date(timeIntervalSince1970: timestamp)
                     let dateFormatter = DateFormatter()
                     dateFormatter.dateFormat = "MMM d"
                     let strDate = dateFormatter.string(from: date)
-                    print(strDate)
+                    self.marketPrices.append(MarketPrice(date: strDate, price: price.rounded()))
                 }
+                self.setupGraph()
             } catch {
                 debugPrint("Error loading json")
             }
@@ -154,15 +159,15 @@ class ViewController: UIViewController {
 
 extension ViewController: ScrollableGraphViewDataSource {
     func value(forPlot plot: Plot, atIndex pointIndex: Int) -> Double {
-        return 0.0
+        return marketPrices[pointIndex].price
     }
     
     func label(atIndex pointIndex: Int) -> String {
-        return ""
+        return marketPrices[pointIndex].date
     }
     
     func numberOfPoints() -> Int {
-        return 0
+        return marketPrices.count
     }
 }
 
